@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Admin — The Geopolitical Brief</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Poppins',sans-serif;background:#f5f4ee;color:#2f2f2f;font-size:14px;min-height:100vh}
+
+    /* LOGIN */
+    .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .login-card{background:#fff;border:1px solid rgba(47,47,47,0.1);border-radius:14px;padding:36px;width:100%;max-width:400px}
+    .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+    .login-logo img{height:28px}
+    .login-logo-text{font-size:14px;font-weight:700}
+    .login-h{font-size:20px;font-weight:700;margin-bottom:6px}
+    .login-sub{font-size:13px;color:#666;margin-bottom:24px;line-height:1.5}
+    .field-label{font-size:11px;font-weight:700;letter-spacing:0.5px;color:#666;margin-bottom:5px;display:block}
+    .field-input{width:100%;padding:10px 12px;font-size:13px;border-radius:7px;border:1.5px solid rgba(47,47,47,0.15);font-family:inherit;outline:none;transition:border-color 0.15s;margin-bottom:14px}
+    .field-input:focus{border-color:#6446FF}
+    .login-btn{width:100%;background:#2f2f2f;color:#fff;font-size:13px;font-weight:700;padding:12px;border-radius:7px;border:none;cursor:pointer;font-family:inherit;letter-spacing:0.2px;transition:opacity 0.15s}
+    .login-btn:hover{opacity:0.85}
+    .login-error{font-size:12px;color:#dc2626;background:#fee2e2;padding:8px 12px;border-radius:6px;margin-top:10px;display:none}
+    .login-help{font-size:11px;color:#aaa;margin-top:16px;line-height:1.6}
+    .login-help a{color:#6446FF}
+
+    /* ADMIN SHELL */
+    .admin-wrap{display:none;min-height:100vh;flex-direction:column}
+    .admin-nav{background:#2f2f2f;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+    .admin-nav-logo{display:flex;align-items:center;gap:10px}
+    .admin-nav-logo img{height:22px;filter:brightness(0) invert(1)}
+    .admin-nav-title{font-size:13px;font-weight:700;color:#fff}
+    .admin-nav-badge{font-size:9px;font-weight:700;background:#FF585D;color:#fff;padding:2px 8px;border-radius:3px;letter-spacing:0.5px;text-transform:uppercase;margin-left:8px}
+    .admin-nav-right{display:flex;align-items:center;gap:12px}
+    .admin-user{font-size:12px;color:rgba(255,255,255,0.5)}
+    .btn-logout{font-size:11px;font-weight:700;background:transparent;color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.15);padding:5px 12px;border-radius:4px;cursor:pointer;font-family:inherit}
+
+    .admin-body{display:flex;flex:1}
+
+    /* SIDEBAR NAV */
+    .admin-sidebar{width:220px;background:#fff;border-right:1px solid rgba(47,47,47,0.08);padding:20px 12px;flex-shrink:0}
+    .nav-section-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#aaa;padding:0 10px;margin:16px 0 6px}
+    .nav-section-label:first-child{margin-top:0}
+    .nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:7px;font-size:13px;font-weight:500;color:#555;cursor:pointer;transition:all 0.12s;border:none;background:transparent;font-family:inherit;width:100%;text-align:left}
+    .nav-item:hover{background:#f5f4ee;color:#2f2f2f}
+    .nav-item.active{background:#FF585D;color:#fff;font-weight:700}
+    .nav-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;opacity:0.6}
+
+    /* MAIN CONTENT */
+    .admin-main{flex:1;padding:28px 32px;overflow-y:auto}
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+    .page-title{font-size:20px;font-weight:700;letter-spacing:-0.3px}
+    .page-sub{font-size:13px;color:#888;margin-top:2px;font-weight:400}
+
+    /* STATUS BAR */
+    .status-bar{background:#fff;border:1px solid rgba(47,47,47,0.1);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+    .status-connected{display:flex;align-items:center;gap:7px;font-size:12px;color:#16a34a;font-weight:600}
+    .status-dot{width:7px;height:7px;border-radius:50%;background:#16a34a}
+    .status-repo{font-size:12px;color:#888}
+    .btn-publish{font-size:12px;font-weight:700;background:#FF585D;color:#fff;padding:9px 20px;border-radius:6px;border:none;cursor:pointer;font-family:inherit;transition:opacity 0.15s;display:flex;align-items:center;gap:7px}
+    .btn-publish:hover{opacity:0.88}
+    .btn-publish:disabled{opacity:0.5;cursor:not-allowed}
+    .publish-spinner{display:none;width:12px;height:12px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* TABS */
+    .tab-row{display:flex;gap:4px;margin-bottom:20px;background:#f5f4ee;padding:4px;border-radius:8px;width:fit-content}
+    .tab-btn{font-size:12px;font-weight:600;padding:7px 16px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:transparent;color:#666;transition:all 0.12s}
+    .tab-btn.active{background:#fff;color:#2f2f2f;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+
+    /* CONFLICT LIST */
+    .conflict-admin-list{display:flex;flex-direction:column;gap:10px}
+    .conflict-admin-card{background:#fff;border:1px solid rgba(47,47,47,0.1);border-radius:10px;overflow:hidden}
+    .conflict-admin-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;transition:background 0.1s}
+    .conflict-admin-header:hover{background:#fafafa}
+    .cah-left{display:flex;align-items:center;gap:10px}
+    .cah-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .cah-name{font-size:13px;font-weight:700}
+    .cah-geo{font-size:11px;color:#aaa;font-weight:500}
+    .cah-right{display:flex;align-items:center;gap:8px}
+    .level-pill{font-size:9px;font-weight:700;padding:3px 9px;border-radius:3px;text-transform:uppercase;letter-spacing:0.3px}
+    .lp-active{background:#fee2e2;color:#991b1b}
+    .lp-escalating{background:#fef3c7;color:#92400e}
+    .lp-watchlist{background:#f0fdf4;color:#166534}
+    .btn-edit-small{font-size:11px;font-weight:700;background:#2f2f2f;color:#fff;padding:5px 12px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+    .btn-delete-small{font-size:11px;font-weight:700;background:transparent;color:#dc2626;padding:5px 10px;border-radius:4px;border:1px solid #fca5a5;cursor:pointer;font-family:inherit}
+    .chevron{font-size:14px;color:#aaa;transition:transform 0.15s}
+    .chevron.open{transform:rotate(180deg)}
+
+    /* EDIT FORM (inline expand) */
+    .conflict-edit-form{display:none;padding:16px;border-top:1px solid #f0f0f0;background:#fafafa}
+    .conflict-edit-form.open{display:block}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .form-full{grid-column:1/-1}
+    .form-group{display:flex;flex-direction:column;gap:4px}
+    .form-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#888}
+    .form-input,.form-select,.form-textarea{font-size:13px;padding:8px 11px;border-radius:6px;border:1.5px solid rgba(47,47,47,0.13);font-family:inherit;outline:none;background:#fff;color:#2f2f2f;transition:border-color 0.15s;width:100%}
+    .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:#6446FF}
+    .form-textarea{resize:vertical;min-height:72px;line-height:1.6}
+    .form-actions{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #f0f0f0}
+    .btn-save{font-size:12px;font-weight:700;background:#FF585D;color:#fff;padding:9px 20px;border-radius:6px;border:none;cursor:pointer;font-family:inherit}
+    .btn-cancel{font-size:12px;font-weight:600;background:transparent;color:#666;padding:8px 16px;border-radius:6px;border:1px solid rgba(47,47,47,0.15);cursor:pointer;font-family:inherit}
+    .sectors-input-note{font-size:10px;color:#aaa;margin-top:3px}
+
+    /* ADD NEW */
+    .btn-add-new{font-size:12px;font-weight:700;background:#2f2f2f;color:#fff;padding:9px 18px;border-radius:6px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
+    .add-new-form{background:#fff;border:1px solid rgba(47,47,47,0.1);border-radius:10px;padding:20px;margin-bottom:14px;display:none}
+    .add-new-form.open{display:block}
+
+    /* RELATED CONTENT */
+    .related-admin-list{display:flex;flex-direction:column;gap:10px}
+    .related-admin-card{background:#fff;border:1px solid rgba(47,47,47,0.1);border-radius:10px;padding:16px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start}
+    .related-tag-sel{font-size:11px;font-weight:700;color:#FF585D;margin-bottom:4px}
+
+    /* SETTINGS */
+    .settings-card{background:#fff;border:1px solid rgba(47,47,47,0.1);border-radius:10px;padding:20px;margin-bottom:14px}
+    .settings-title{font-size:14px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f0f0f0}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:24px;right:24px;background:#2f2f2f;color:#fff;font-size:13px;font-weight:600;padding:12px 20px;border-radius:8px;z-index:9999;display:none;align-items:center;gap:8px;max-width:340px}
+    .toast.show{display:flex}
+    .toast.success::before{content:'✓';color:#4ade80;font-size:15px}
+    .toast.error::before{content:'✕';color:#f87171;font-size:15px}
+
+    /* EMPTY STATE */
+    .empty-state{text-align:center;padding:48px 20px;color:#aaa}
+    .empty-state-icon{font-size:32px;margin-bottom:12px}
+    .empty-state-text{font-size:14px;font-weight:500}
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="logo.png" alt="Signal AI" onerror="this.style.display='none'"/>
+      <span class="login-logo-text">The Geopolitical Brief</span>
+    </div>
+    <div class="login-h">Team admin</div>
+    <div class="login-sub">Sign in with your GitHub personal access token to edit and publish content.</div>
+    <label class="field-label">GitHub repository</label>
+    <input class="field-input" id="login-repo" type="text" placeholder="username/geopolitical-brief" value=""/>
+    <label class="field-label">GitHub personal access token</label>
+    <input class="field-input" id="login-token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/>
+    <label class="field-label">Admin password</label>
+    <input class="field-input" id="login-pass" type="password" placeholder="Set in settings"/>
+    <button class="login-btn" onclick="handleLogin()">Sign in</button>
+    <div class="login-error" id="login-error">Incorrect password or invalid GitHub token.</div>
+    <div class="login-help">
+      Need a token? <a href="https://github.com/settings/tokens/new?scopes=repo" target="_blank">Create one on GitHub</a> — needs <strong>repo</strong> scope only.<br><br>
+      Default admin password: <strong>geobriefadmin</strong> (change in Settings after first login).
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin-wrap" id="admin-screen">
+  <nav class="admin-nav">
+    <div class="admin-nav-logo">
+      <img src="logo.png" alt="Signal AI" onerror="this.style.display='none'" style="height:22px;filter:brightness(0) invert(1)"/>
+      <span class="admin-nav-title">The Geopolitical Brief</span>
+      <span class="admin-nav-badge">Admin</span>
+    </div>
+    <div class="admin-nav-right">
+      <span class="admin-user" id="nav-repo-label"></span>
+      <button class="btn-logout" onclick="handleLogout()">Sign out</button>
+    </div>
+  </nav>
+
+  <div class="admin-body">
+
+    <aside class="admin-sidebar">
+      <div class="nav-section-label">Content</div>
+      <button class="nav-item active" onclick="showPage('conflicts',this)">
+        <span class="nav-dot"></span>Conflict tracker
+      </button>
+      <button class="nav-item" onclick="showPage('related',this)">
+        <span class="nav-dot"></span>Related content
+      </button>
+      <button class="nav-item" onclick="showPage('issues',this)">
+        <span class="nav-dot"></span>Issue archive
+      </button>
+      <div class="nav-section-label">Site</div>
+      <button class="nav-item" onclick="showPage('settings',this)">
+        <span class="nav-dot"></span>Settings
+      </button>
+      <button class="nav-item" onclick="window.open('index.html','_blank')">
+        <span class="nav-dot"></span>Preview site ↗
+      </button>
+    </aside>
+
+    <main class="admin-main">
+
+      <!-- STATUS BAR -->
+      <div class="status-bar">
+        <div>
+          <div class="status-connected"><span class="status-dot"></span>Connected to GitHub</div>
+          <div class="status-repo" id="status-repo-label">Loading...</div>
+        </div>
+        <button class="btn-publish" id="publish-btn" onclick="publishToGitHub()">
+          <span class="publish-spinner" id="pub-spinner"></span>
+          Publish changes
+        </button>
+      </div>
+
+      <!-- CONFLICTS PAGE -->
+      <div id="page-conflicts">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Conflict tracker</div>
+            <div class="page-sub">Edit risk levels, business impact and situation briefs. Changes go live when you publish.</div>
+          </div>
+          <button class="btn-add-new" onclick="toggleAddNew()">+ Add conflict</button>
+        </div>
+
+        <!-- ADD NEW FORM -->
+        <div class="add-new-form" id="add-new-form">
+          <div style="font-size:14px;font-weight:700;margin-bottom:14px">New conflict</div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="new-name" placeholder="Sudan — Port Sudan"/></div>
+            <div class="form-group"><label class="form-label">Region</label><select class="form-select" id="new-region"><option>Africa</option><option>Americas</option><option>Asia</option><option>Europe</option><option>Middle East</option></select></div>
+            <div class="form-group"><label class="form-label">Geographic label</label><input class="form-input" id="new-geo" placeholder="East Africa"/></div>
+            <div class="form-group"><label class="form-label">Exposure level</label><select class="form-select" id="new-level"><option value="active">High exposure (Active)</option><option value="escalating">Elevated (Escalating)</option><option value="watchlist">Monitor (Watch list)</option></select></div>
+            <div class="form-group"><label class="form-label">Latitude</label><input class="form-input" id="new-lat" type="number" placeholder="15"/></div>
+            <div class="form-group"><label class="form-label">Longitude</label><input class="form-input" id="new-lng" type="number" placeholder="30"/></div>
+            <div class="form-group"><label class="form-label">Day count</label><input class="form-input" id="new-days" type="number" placeholder="1"/></div>
+            <div class="form-group"><label class="form-label">Confidence</label><select class="form-select" id="new-confidence"><option value="high">High confidence</option><option value="medium">Medium confidence</option><option value="emerging">Emerging signal</option></select></div>
+            <div class="form-group form-full"><label class="form-label">Sectors (comma separated)</label><input class="form-input" id="new-sectors" placeholder="Supply chain, Energy, Commodities"/><div class="sectors-input-note">Options: Supply chain · Energy · Financial markets · Commodities · Regulatory · Insurance · Real estate</div></div>
+            <div class="form-group form-full"><label class="form-label">Business impact</label><textarea class="form-textarea" id="new-impact" placeholder="Lead with the consequence for business — what does this mean for companies with exposure?"></textarea></div>
+            <div class="form-group form-full"><label class="form-label">Situation</label><textarea class="form-textarea" id="new-situation" placeholder="What is happening on the ground?"></textarea></div>
+            <div class="form-group form-full"><label class="form-label">Watch for</label><textarea class="form-textarea" id="new-watch" style="min-height:52px" placeholder="Forward indicators — what should readers monitor next?"></textarea></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-save" onclick="addConflict()">Add conflict</button>
+            <button class="btn-cancel" onclick="toggleAddNew()">Cancel</button>
+          </div>
+        </div>
+
+        <!-- CONFLICT LIST -->
+        <div class="conflict-admin-list" id="conflict-admin-list"></div>
+      </div>
+
+      <!-- RELATED CONTENT PAGE -->
+      <div id="page-related" style="display:none">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Related content</div>
+            <div class="page-sub">Manage the Signal AI content cards shown at the bottom of the page.</div>
+          </div>
+          <button class="btn-add-new" onclick="addRelatedCard()">+ Add card</button>
+        </div>
+        <div class="related-admin-list" id="related-admin-list"></div>
+      </div>
+
+      <!-- ISSUES PAGE -->
+      <div id="page-issues" style="display:none">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Issue archive</div>
+            <div class="page-sub">Manage the archive of published issues shown on the site.</div>
+          </div>
+          <button class="btn-add-new" onclick="addIssueCard()">+ Add issue</button>
+        </div>
+        <div class="conflict-admin-list" id="issues-admin-list"></div>
+      </div>
+
+      <!-- SETTINGS PAGE -->
+      <div id="page-settings" style="display:none">
+        <div class="page-header">
+          <div class="page-title">Settings</div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-title">Admin password</div>
+          <div class="form-group" style="max-width:360px">
+            <label class="form-label">New password</label>
+            <input class="form-input" id="new-admin-pass" type="password" placeholder="Enter new password"/>
+          </div>
+          <div class="form-actions" style="border:none;padding-top:12px">
+            <button class="btn-save" onclick="changePassword()">Update password</button>
+          </div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-title">Newsletter details</div>
+          <div class="form-grid" style="max-width:600px">
+            <div class="form-group"><label class="form-label">Publication name</label><input class="form-input" value="The Geopolitical Brief"/></div>
+            <div class="form-group"><label class="form-label">Published by</label><input class="form-input" value="Signal AI"/></div>
+            <div class="form-group form-full"><label class="form-label">Site tagline</label><input class="form-input" value="Geopolitical risk, translated into business exposure"/></div>
+          </div>
+          <div class="form-actions" style="border:none;padding-top:12px">
+            <button class="btn-save">Save details</button>
+          </div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-title">How publishing works</div>
+          <p style="font-size:13px;color:#666;line-height:1.7">When you click <strong>Publish changes</strong>, the admin panel writes your edits directly to <code style="background:#f5f4ee;padding:2px 6px;border-radius:3px">data/conflicts.js</code> in your GitHub repository via the GitHub API. GitHub Pages automatically redeploys the site within 60 seconds. No server required — everything runs in your browser.</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+var ADMIN_PASS_KEY = 'tgb_admin_pass';
+var TOKEN_KEY = 'tgb_gh_token';
+var REPO_KEY  = 'tgb_gh_repo';
+
+var DEFAULT_PASS = 'geobriefadmin';
+var ghToken = '';
+var ghRepo = '';
+
+var conflicts = [];
+var relatedItems = [
+  {tag:'Report', title:'The 2026 Global Risk Outlook: 10 geopolitical forces reshaping business', meta:'Signal AI · 24 min read', url:'#'},
+  {tag:'Webinar', title:'How leading risk teams use AI to monitor geopolitical exposure in real time', meta:'Signal AI · On demand', url:'#'},
+  {tag:'Case study', title:'How a global insurer reduced Levant exposure risk by 40% with Signal AI', meta:'Signal AI · 8 min read', url:'#'},
+  {tag:'Guide', title:'Building a geopolitical risk framework for your board: a practical guide', meta:'Signal AI · 15 min read', url:'#'}
+];
+var issues = [
+  {number:'01', title:'The fracturing of peace guarantees', date:'April 14, 2026', tags:['Sudan','Sahel','Lebanon'], url:'issue-01.html'}
+];
+
+function getAdminPass() { return localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_PASS; }
+
+function handleLogin() {
+  var repo  = document.getElementById('login-repo').value.trim();
+  var token = document.getElementById('login-token').value.trim();
+  var pass  = document.getElementById('login-pass').value;
+  if (pass !== getAdminPass()) {
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+  ghToken = token;
+  ghRepo  = repo;
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(REPO_KEY, repo);
+  document.getElementById('login-error').style.display = 'none';
+  bootAdmin();
+}
+
+function handleLogout() {
+  document.getElementById('admin-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function bootAdmin() {
+  document.getElementById('login-screen').style.display = 'none';
+  var a = document.getElementById('admin-screen');
+  a.style.display = 'flex';
+  document.getElementById('nav-repo-label').textContent = ghRepo || 'Local mode';
+  document.getElementById('status-repo-label').textContent = ghRepo ? 'github.com/' + ghRepo : 'No repo — publish will download file';
+  loadConflictsFromPage();
+  renderConflictList();
+  renderRelatedList();
+  renderIssueList();
+}
+
+function loadConflictsFromPage() {
+  if (typeof CONFLICTS !== 'undefined') { conflicts = JSON.parse(JSON.stringify(CONFLICTS)); }
+  if (typeof RELATED_ITEMS !== 'undefined') { relatedItems = JSON.parse(JSON.stringify(RELATED_ITEMS)); }
+  if (typeof ISSUES !== 'undefined') { issues = JSON.parse(JSON.stringify(ISSUES)); }
+}
+
+function showPage(name, btn) {
+  ['conflicts','related','issues','settings'].forEach(function(p) {
+    var el = document.getElementById('page-'+p);
+    if (el) el.style.display = p === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+}
+
+function levelColor(l) { return l==='active'?'#FF585D':l==='escalating'?'#f39c12':'#f1c40f'; }
+function levelPillClass(l) { return l==='active'?'lp-active':l==='escalating'?'lp-escalating':'lp-watchlist'; }
+function levelPillLabel(l) { return l==='active'?'High exposure':l==='escalating'?'Elevated':'Monitor'; }
+
+function renderConflictList() {
+  var list = document.getElementById('conflict-admin-list');
+  if (!list) return;
+  if (!conflicts.length) { list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No conflicts yet. Add one above.</div></div>'; return; }
+  list.innerHTML = '';
+  conflicts.forEach(function(c, i) {
+    var card = document.createElement('div');
+    card.className = 'conflict-admin-card';
+    card.id = 'conflict-card-'+i;
+    card.innerHTML =
+      '<div class="conflict-admin-header" onclick="toggleEdit('+i+')">'
+        +'<div class="cah-left">'
+          +'<span class="cah-dot" style="background:'+levelColor(c.level)+'"></span>'
+          +'<div><div class="cah-name">'+c.name+'</div><div class="cah-geo">'+(c.geo||c.region)+'</div></div>'
+        +'</div>'
+        +'<div class="cah-right">'
+          +'<span class="level-pill '+levelPillClass(c.level)+'">'+levelPillLabel(c.level)+'</span>'
+          +'<button class="btn-delete-small" onclick="event.stopPropagation();deleteConflict('+i+')">Delete</button>'
+          +'<span class="chevron" id="chev-'+i+'">▾</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="conflict-edit-form" id="edit-form-'+i+'">'
+        +editFormHTML(c, i)
+      +'</div>';
+    list.appendChild(card);
+  });
+}
+
+function editFormHTML(c, i) {
+  var secs = (c.sectors||[]).join(', ');
+  return '<div class="form-grid">'
+    +'<div class="form-group"><label class="form-label">Name</label><input class="form-input" id="ef-name-'+i+'" value="'+esc(c.name)+'"/></div>'
+    +'<div class="form-group"><label class="form-label">Region</label><select class="form-select" id="ef-region-'+i+'">'+['Africa','Americas','Asia','Europe','Middle East'].map(function(r){return '<option'+(c.region===r?' selected':'')+'>'+r+'</option>';}).join('')+'</select></div>'
+    +'<div class="form-group"><label class="form-label">Geographic label</label><input class="form-input" id="ef-geo-'+i+'" value="'+esc(c.geo||'')+'"/></div>'
+    +'<div class="form-group"><label class="form-label">Exposure level</label><select class="form-select" id="ef-level-'+i+'">'
+      +'<option value="active"'+(c.level==='active'?' selected':'')+'>High exposure (Active)</option>'
+      +'<option value="escalating"'+(c.level==='escalating'?' selected':'')+'>Elevated (Escalating)</option>'
+      +'<option value="watchlist"'+(c.level==='watchlist'?' selected':'')+'>Monitor (Watch list)</option>'
+    +'</select></div>'
+    +'<div class="form-group"><label class="form-label">Latitude</label><input class="form-input" id="ef-lat-'+i+'" type="number" value="'+c.lat+'"/></div>'
+    +'<div class="form-group"><label class="form-label">Longitude</label><input class="form-input" id="ef-lng-'+i+'" type="number" value="'+c.lng+'"/></div>'
+    +'<div class="form-group"><label class="form-label">Day count</label><input class="form-input" id="ef-days-'+i+'" type="number" value="'+c.days+'"/></div>'
+    +'<div class="form-group"><label class="form-label">Confidence</label><select class="form-select" id="ef-conf-'+i+'">'
+      +'<option value="high"'+(c.confidence==='high'?' selected':'')+'>High confidence</option>'
+      +'<option value="medium"'+(c.confidence==='medium'?' selected':'')+'>Medium confidence</option>'
+      +'<option value="emerging"'+(c.confidence==='emerging'?' selected':'')+'>Emerging signal</option>'
+    +'</select></div>'
+    +'<div class="form-group form-full"><label class="form-label">Sectors (comma separated)</label><input class="form-input" id="ef-sectors-'+i+'" value="'+esc(secs)+'"/><div class="sectors-input-note">Options: Supply chain · Energy · Financial markets · Commodities · Regulatory · Insurance · Real estate</div></div>'
+    +'<div class="form-group form-full"><label class="form-label">Business impact</label><textarea class="form-textarea" id="ef-impact-'+i+'">'+esc(c.impact||'')+'</textarea></div>'
+    +'<div class="form-group form-full"><label class="form-label">Situation</label><textarea class="form-textarea" id="ef-sit-'+i+'">'+esc(c.situation||c.summary||'')+'</textarea></div>'
+    +'<div class="form-group form-full"><label class="form-label">Watch for</label><textarea class="form-textarea" id="ef-watch-'+i+'" style="min-height:52px">'+esc(c.watch||'')+'</textarea></div>'
+  +'</div>'
+  +'<div class="form-actions">'
+    +'<button class="btn-save" onclick="saveConflict('+i+')">Save</button>'
+    +'<button class="btn-cancel" onclick="toggleEdit('+i+')">Cancel</button>'
+  +'</div>';
+}
+
+function toggleEdit(i) {
+  var form = document.getElementById('edit-form-'+i);
+  var chev = document.getElementById('chev-'+i);
+  var open = form.classList.toggle('open');
+  if (chev) chev.classList.toggle('open', open);
+}
+
+function saveConflict(i) {
+  var c = conflicts[i];
+  c.name       = document.getElementById('ef-name-'+i).value;
+  c.region     = document.getElementById('ef-region-'+i).value;
+  c.geo        = document.getElementById('ef-geo-'+i).value;
+  c.level      = document.getElementById('ef-level-'+i).value;
+  c.lat        = parseFloat(document.getElementById('ef-lat-'+i).value)||0;
+  c.lng        = parseFloat(document.getElementById('ef-lng-'+i).value)||0;
+  c.days       = parseInt(document.getElementById('ef-days-'+i).value)||0;
+  c.confidence = document.getElementById('ef-conf-'+i).value;
+  c.sectors    = document.getElementById('ef-sectors-'+i).value.split(',').map(function(s){return s.trim();}).filter(Boolean);
+  c.impact     = document.getElementById('ef-impact-'+i).value;
+  c.situation  = document.getElementById('ef-sit-'+i).value;
+  c.watch      = document.getElementById('ef-watch-'+i).value;
+  c.updated    = 'just now';
+  renderConflictList();
+  showToast('Conflict saved — click Publish to go live', 'success');
+}
+
+function deleteConflict(i) {
+  if (!confirm('Delete "' + conflicts[i].name + '"?')) return;
+  conflicts.splice(i, 1);
+  renderConflictList();
+  showToast('Conflict deleted', 'success');
+}
+
+function toggleAddNew() {
+  var f = document.getElementById('add-new-form');
+  f.classList.toggle('open');
+}
+
+function addConflict() {
+  var name = document.getElementById('new-name').value.trim();
+  if (!name) { alert('Please enter a conflict name.'); return; }
+  conflicts.unshift({
+    id: name.toLowerCase().replace(/[^a-z0-9]/g,'-'),
+    name: name,
+    region: document.getElementById('new-region').value,
+    geo: document.getElementById('new-geo').value,
+    level: document.getElementById('new-level').value,
+    lat: parseFloat(document.getElementById('new-lat').value)||0,
+    lng: parseFloat(document.getElementById('new-lng').value)||0,
+    days: parseInt(document.getElementById('new-days').value)||1,
+    confidence: document.getElementById('new-confidence').value,
+    sectors: document.getElementById('new-sectors').value.split(',').map(function(s){return s.trim();}).filter(Boolean),
+    impact: document.getElementById('new-impact').value,
+    situation: document.getElementById('new-situation').value,
+    watch: document.getElementById('new-watch').value,
+    updated: 'just now'
+  });
+  toggleAddNew();
+  renderConflictList();
+  showToast('Conflict added — click Publish to go live', 'success');
+}
+
+// RELATED CONTENT
+function renderRelatedList() {
+  var list = document.getElementById('related-admin-list');
+  if (!list) return;
+  list.innerHTML = '';
+  relatedItems.forEach(function(r, i) {
+    var card = document.createElement('div');
+    card.className = 'related-admin-card';
+    card.innerHTML =
+      '<div>'
+        +'<div class="form-group" style="margin-bottom:8px"><label class="form-label">Type</label>'
+          +'<select class="form-select" onchange="relatedItems['+i+'].tag=this.value" style="width:140px">'
+          +['Report','Webinar','Case study','Guide','Article','Podcast'].map(function(t){return '<option'+(r.tag===t?' selected':'')+'>'+t+'</option>';}).join('')
+          +'</select></div>'
+        +'<div class="form-group" style="margin-bottom:8px"><label class="form-label">Title</label>'
+          +'<input class="form-input" value="'+esc(r.title)+'" oninput="relatedItems['+i+'].title=this.value"/></div>'
+        +'<div class="form-grid" style="max-width:500px">'
+          +'<div class="form-group"><label class="form-label">Meta (source · time)</label><input class="form-input" value="'+esc(r.meta)+'" oninput="relatedItems['+i+'].meta=this.value"/></div>'
+          +'<div class="form-group"><label class="form-label">URL</label><input class="form-input" value="'+esc(r.url)+'" oninput="relatedItems['+i+'].url=this.value"/></div>'
+        +'</div>'
+      +'</div>'
+      +'<button class="btn-delete-small" onclick="relatedItems.splice('+i+',1);renderRelatedList()">Delete</button>';
+    list.appendChild(card);
+  });
+}
+
+function addRelatedCard() {
+  relatedItems.push({tag:'Report', title:'New content item', meta:'Signal AI · 5 min read', url:'#'});
+  renderRelatedList();
+}
+
+// ISSUES
+function renderIssueList() {
+  var list = document.getElementById('issues-admin-list');
+  if (!list) return;
+  list.innerHTML = '';
+  issues.forEach(function(iss, i) {
+    var card = document.createElement('div');
+    card.className = 'conflict-admin-card';
+    card.innerHTML =
+      '<div class="conflict-admin-header" onclick="toggleIssueEdit('+i+')">'
+        +'<div class="cah-left"><div><div class="cah-name">Issue '+iss.number+': '+iss.title+'</div><div class="cah-geo">'+iss.date+'</div></div></div>'
+        +'<div class="cah-right"><button class="btn-delete-small" onclick="event.stopPropagation();issues.splice('+i+',1);renderIssueList()">Delete</button><span class="chevron" id="ichev-'+i+'">▾</span></div>'
+      +'</div>'
+      +'<div class="conflict-edit-form" id="issue-form-'+i+'">'
+        +'<div class="form-grid">'
+          +'<div class="form-group"><label class="form-label">Issue number</label><input class="form-input" id="if-num-'+i+'" value="'+esc(iss.number)+'"/></div>'
+          +'<div class="form-group"><label class="form-label">Date</label><input class="form-input" id="if-date-'+i+'" value="'+esc(iss.date)+'"/></div>'
+          +'<div class="form-group form-full"><label class="form-label">Title</label><input class="form-input" id="if-title-'+i+'" value="'+esc(iss.title)+'"/></div>'
+          +'<div class="form-group"><label class="form-label">Tags (comma separated)</label><input class="form-input" id="if-tags-'+i+'" value="'+esc((iss.tags||[]).join(', '))+'"/></div>'
+          +'<div class="form-group"><label class="form-label">URL</label><input class="form-input" id="if-url-'+i+'" value="'+esc(iss.url)+'"/></div>'
+        +'</div>'
+        +'<div class="form-actions">'
+          +'<button class="btn-save" onclick="saveIssue('+i+')">Save</button>'
+          +'<button class="btn-cancel" onclick="toggleIssueEdit('+i+')">Cancel</button>'
+        +'</div>'
+      +'</div>';
+    list.appendChild(card);
+  });
+}
+
+function toggleIssueEdit(i) {
+  var f = document.getElementById('issue-form-'+i);
+  var c = document.getElementById('ichev-'+i);
+  var open = f.classList.toggle('open');
+  if (c) c.classList.toggle('open', open);
+}
+
+function saveIssue(i) {
+  issues[i].number = document.getElementById('if-num-'+i).value;
+  issues[i].date   = document.getElementById('if-date-'+i).value;
+  issues[i].title  = document.getElementById('if-title-'+i).value;
+  issues[i].tags   = document.getElementById('if-tags-'+i).value.split(',').map(function(s){return s.trim();}).filter(Boolean);
+  issues[i].url    = document.getElementById('if-url-'+i).value;
+  renderIssueList();
+  showToast('Issue saved — click Publish to go live', 'success');
+}
+
+function addIssueCard() {
+  var num = String(issues.length + 1).padStart(2,'0');
+  issues.push({number: num, title: 'New issue title', date: new Date().toLocaleDateString('en-GB',{year:'numeric',month:'long',day:'numeric'}), tags:[], url:'issue-'+num+'.html'});
+  renderIssueList();
+}
+
+// SETTINGS
+function changePassword() {
+  var p = document.getElementById('new-admin-pass').value;
+  if (!p || p.length < 6) { alert('Password must be at least 6 characters.'); return; }
+  localStorage.setItem(ADMIN_PASS_KEY, p);
+  document.getElementById('new-admin-pass').value = '';
+  showToast('Password updated', 'success');
+}
+
+// PUBLISH
+function buildConflictsJS() {
+  var relatedStr = JSON.stringify(relatedItems, null, 2)
+    .replace(/"([^"]+)":/g, '$1:');
+
+  var conflictsStr = 'const CONFLICTS = ' + JSON.stringify(conflicts, null, 2) + ';\n\n'
+    + 'const RISK_INDEX = [\n'
+    + '  { region: \'Middle East\', score: 82 },\n'
+    + '  { region: \'Africa\',      score: 76 },\n'
+    + '  { region: \'Europe\',      score: 61 },\n'
+    + '  { region: \'South Asia\',  score: 57 },\n'
+    + '  { region: \'SE Asia\',     score: 44 },\n'
+    + '  { region: \'Americas\',    score: 38 }\n'
+    + '];\n\n'
+    + 'const ISSUES = ' + JSON.stringify(issues, null, 2) + ';\n\n'
+    + 'const RELATED_ITEMS = ' + JSON.stringify(relatedItems, null, 2) + ';\n';
+  return conflictsStr;
+}
+
+function publishToGitHub() {
+  var btn = document.getElementById('publish-btn');
+  var spinner = document.getElementById('pub-spinner');
+  var content = buildConflictsJS();
+
+  if (!ghToken || !ghRepo) {
+    // No GitHub token — download the file instead
+    var blob = new Blob([content], {type:'text/javascript'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'conflicts.js';
+    a.click();
+    showToast('Downloaded conflicts.js — upload to data/ in your repo', 'success');
+    return;
+  }
+
+  btn.disabled = true;
+  spinner.style.display = 'inline-block';
+
+  var apiUrl = 'https://api.github.com/repos/' + ghRepo + '/contents/data/conflicts.js';
+
+  // Get current SHA first
+  fetch(apiUrl, {
+    headers: { Authorization: 'token ' + ghToken, Accept: 'application/vnd.github.v3+json' }
+  }).then(function(r){ return r.json(); })
+    .then(function(data) {
+      var sha = data.sha || '';
+      var encoded = btoa(unescape(encodeURIComponent(content)));
+      return fetch(apiUrl, {
+        method: 'PUT',
+        headers: { Authorization: 'token ' + ghToken, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Update conflicts.js via admin panel', content: encoded, sha: sha })
+      });
+    })
+    .then(function(r) {
+      if (r.ok) { showToast('Published! Site will update in ~60 seconds.', 'success'); }
+      else { return r.json().then(function(e){ throw new Error(e.message); }); }
+    })
+    .catch(function(err) { showToast('Publish failed: ' + err.message, 'error'); })
+    .finally(function() { btn.disabled = false; spinner.style.display = 'none'; });
+}
+
+// UTILS
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type||'');
+  setTimeout(function(){ t.className = 'toast'; }, 3500);
+}
+
+// AUTO-LOGIN if saved
+(function(){
+  var savedToken = localStorage.getItem(TOKEN_KEY);
+  var savedRepo  = localStorage.getItem(REPO_KEY);
+  if (savedToken || savedRepo) {
+    document.getElementById('login-token').value = savedToken || '';
+    document.getElementById('login-repo').value  = savedRepo  || '';
+  }
+})();
+</script>
+</body>
+</html>

@@ -16,10 +16,7 @@
 <nav class="nav">
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">
-      <svg class="logo-mark" viewBox="0 0 28 28" fill="none">
-        <path d="M14 2L26 24H2L14 2Z" fill="#FF585D"/>
-        <path d="M14 7L22.5 22H5.5L14 7Z" fill="white" fill-opacity="0.25"/>
-      </svg>
+      <img src="logo.png" alt="Signal AI" style="height:32px;width:auto;display:block"/>
       <div>
         <span class="logo-name">The Geopolitical Brief</span>
         <span class="logo-by">by Signal AI</span>
@@ -122,24 +119,6 @@
         <button class="btn-demo-ghost">View Signal AI platform</button>
       </div>
 
-      <div class="briefing-box">
-        <div class="briefing-h">Request a tailored briefing</div>
-        <div class="briefing-sub">Tell us your sector and region — we'll send you a custom risk snapshot within 24 hours.</div>
-        <input class="briefing-input" id="b-email" type="email" placeholder="Work email"/>
-        <select class="briefing-select" id="b-sector">
-          <option value="">Your sector</option>
-          <option>Energy &amp; natural resources</option>
-          <option>Financial services</option>
-          <option>Supply chain &amp; logistics</option>
-          <option>Technology</option>
-          <option>Consumer goods</option>
-          <option>Government &amp; public sector</option>
-        </select>
-        <input class="briefing-input" id="b-region" type="text" placeholder="Region of interest (e.g. Middle East)"/>
-        <button class="briefing-btn" onclick="handleBriefing()">Request briefing</button>
-        <div class="briefing-success" id="briefing-ok">Request received — we'll be in touch within 24 hours.</div>
-      </div>
-
       <div class="widget">
         <div class="widget-title">Latest issue</div>
         <div class="latest-issue">
@@ -150,9 +129,16 @@
         <button class="read-btn" onclick="window.location.href='issue-01.html'">Read full issue →</button>
       </div>
 
+      <div class="subscribe-box">
+        <div class="sub-title">Get the brief every Monday</div>
+        <div class="sub-desc">Geopolitical conflict analysis for executives, investors and policy professionals. Powered by Signal AI.</div>
+        <input class="sub-input" id="sub-email" type="email" placeholder="your@email.com"/>
+        <button class="sub-btn" onclick="handleSubscribe()">Subscribe free</button>
+      </div>
+
       <div class="action-row">
         <div class="action-text"><strong>Refer a colleague</strong>Know someone on a risk committee who should read this?</div>
-        <button class="btn-action-dark">Refer →</button>
+        <button class="btn-action-dark" onclick="openReferModal()">Refer →</button>
       </div>
 
       <div class="action-row">
@@ -178,9 +164,20 @@
   </section>
 </div>
 
+<section class="related-section">
+  <div class="container">
+    <div class="sec-lbl">Related content from Signal AI</div>
+    <div class="related-grid" id="related-grid"></div>
+    <div class="related-cta-row">
+      <span class="related-cta-text">Explore the full Signal AI resource library</span>
+      <a class="related-cta-btn" href="https://signal.ai" target="_blank" rel="noopener">Visit signal.ai →</a>
+    </div>
+  </div>
+</section>
+
 <footer class="site-footer">
   <div class="footer-left">
-    <svg width="22" height="22" viewBox="0 0 28 28" fill="none"><path d="M14 2L26 24H2L14 2Z" fill="#FF585D"/><path d="M14 7L22.5 22H5.5L14 7Z" fill="white" fill-opacity="0.25"/></svg>
+    <img src="logo.png" alt="Signal AI" style="height:26px;width:auto;filter:brightness(0) invert(1)"/>
     <div><span class="footer-name">The Geopolitical Brief</span><span class="footer-by"> by Signal AI</span></div>
   </div>
   <div class="footer-links">
@@ -189,9 +186,55 @@
   </div>
 </footer>
 
+<!-- Refer modal -->
+<div id="refer-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:28px;width:100%;max-width:400px;margin:0 20px;position:relative">
+    <button onclick="closeReferModal()" style="position:absolute;top:14px;right:16px;background:transparent;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1">×</button>
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#FF585D;margin-bottom:10px">Refer a colleague</div>
+    <div style="font-size:17px;font-weight:700;margin-bottom:6px;letter-spacing:-0.2px">Invite someone to The Geopolitical Brief</div>
+    <div style="font-size:13px;color:#666;margin-bottom:20px;line-height:1.6">Know someone on a risk committee or investment team who should be reading this? Send them a direct invitation.</div>
+    <input id="refer-name" type="text" placeholder="Colleague's name" style="width:100%;padding:10px 12px;font-size:13px;border-radius:6px;border:1.5px solid rgba(47,47,47,0.15);font-family:inherit;outline:none;margin-bottom:8px"/>
+    <input id="refer-email" type="email" placeholder="Colleague's work email" style="width:100%;padding:10px 12px;font-size:13px;border-radius:6px;border:1.5px solid rgba(47,47,47,0.15);font-family:inherit;outline:none;margin-bottom:8px"/>
+    <input id="refer-note" type="text" placeholder="Personal note (optional)" style="width:100%;padding:10px 12px;font-size:13px;border-radius:6px;border:1.5px solid rgba(47,47,47,0.15);font-family:inherit;outline:none;margin-bottom:14px"/>
+    <button onclick="sendRefer()" style="width:100%;background:#2F2F2F;color:#fff;font-size:13px;font-weight:700;padding:11px;border-radius:6px;border:none;cursor:pointer;font-family:inherit;letter-spacing:0.2px">Send invitation</button>
+    <div id="refer-ok" style="display:none;margin-top:10px;font-size:12px;color:#166534;background:#dcfce7;padding:8px 12px;border-radius:6px;font-weight:600;text-align:center">Invitation sent successfully!</div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
 <script src="data/conflicts.js"></script>
 <script src="js/map.js"></script>
+<script>
+function handleSubscribe() {
+  var e = document.getElementById('sub-email') && document.getElementById('sub-email').value;
+  if (!e || !e.includes('@')) { alert('Please enter a valid email address.'); return; }
+  alert('Thanks for subscribing! Issue 01 is on its way to ' + e);
+}
+function openReferModal() {
+  var m = document.getElementById('refer-modal');
+  m.style.display = 'flex';
+}
+function closeReferModal() {
+  document.getElementById('refer-modal').style.display = 'none';
+  document.getElementById('refer-ok').style.display = 'none';
+}
+function sendRefer() {
+  var name  = document.getElementById('refer-name').value.trim();
+  var email = document.getElementById('refer-email').value.trim();
+  if (!name || !email || !email.includes('@')) {
+    alert('Please enter your colleague\'s name and email.');
+    return;
+  }
+  document.getElementById('refer-ok').style.display = 'block';
+  document.getElementById('refer-name').value = '';
+  document.getElementById('refer-email').value = '';
+  document.getElementById('refer-note').value = '';
+  setTimeout(function() { closeReferModal(); }, 2500);
+}
+document.getElementById('refer-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeReferModal();
+});
+</script>
 </body>
 </html>

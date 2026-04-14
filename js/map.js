@@ -208,5 +208,22 @@
     renderRiskIndex();
     renderArchive();
     renderStats();
+    renderRelated();
   });
 })();
+
+  function renderRelated() {
+    var grid = document.getElementById('related-grid');
+    if (!grid || typeof RELATED_ITEMS === 'undefined') return;
+    grid.innerHTML = '';
+    RELATED_ITEMS.forEach(function(r) {
+      var a = document.createElement('a');
+      a.className = 'related-card';
+      a.href = r.url || '#';
+      if (r.url && r.url !== '#') { a.target = '_blank'; a.rel = 'noopener'; }
+      a.innerHTML = '<div class="related-tag">'+r.tag+'</div>'
+        +'<div class="related-title">'+r.title+'</div>'
+        +'<div class="related-meta">'+r.meta+'</div>';
+      grid.appendChild(a);
+    });
+  }

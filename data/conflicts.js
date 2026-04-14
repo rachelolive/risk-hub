@@ -153,3 +153,11 @@ const ISSUES = [
     url: 'issue-01.html'
   }
 ];
+
+// Related content cards — edit via admin.html or directly here
+const RELATED_ITEMS = [
+  { tag: 'Report',     title: 'The 2026 Global Risk Outlook: 10 geopolitical forces reshaping business', meta: 'Signal AI · 24 min read', url: '#' },
+  { tag: 'Webinar',    title: 'How leading risk teams use AI to monitor geopolitical exposure in real time', meta: 'Signal AI · On demand', url: '#' },
+  { tag: 'Case study', title: 'How a global insurer reduced Levant exposure risk by 40% with Signal AI', meta: 'Signal AI · 8 min read', url: '#' },
+  { tag: 'Guide',      title: 'Building a geopolitical risk framework for your board: a practical guide', meta: 'Signal AI · 15 min read', url: '#' }
+];
