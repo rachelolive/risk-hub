@@ -1,251 +1,209 @@
-// js/map.js
-// Interactive world conflict map using D3 + TopoJSON
-
 (function () {
-  const WORLD_TOPO = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+  var WORLD_TOPO = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+  var activeRegion = 'All';
+  var activeSector = 'All';
 
-  function levelColor(level) {
-    return level === 'active' ? '#e74c3c' : level === 'escalating' ? '#f39c12' : '#f1c40f';
-  }
-  function levelLabel(level) {
-    return level === 'active' ? 'Active conflict' : level === 'escalating' ? 'Escalating' : 'Watch list';
-  }
-  function levelBadgeClass(level) {
-    return level === 'active' ? 'badge-active' : level === 'escalating' ? 'badge-escalating' : 'badge-watchlist';
-  }
+  function levelColor(l) { return l==='active'?'#FF585D':l==='escalating'?'#f39c12':'#f1c40f'; }
+  function levelLabel(l) { return l==='active'?'High exposure':l==='escalating'?'Elevated':'Monitor'; }
+  function badgeClass(l)  { return l==='active'?'exp-high':l==='escalating'?'exp-elev':'exp-mon'; }
+  function confClass(c)   { return c==='high'?'conf-h':c==='medium'?'conf-m':'conf-e'; }
+  function confLabel(c)   { return c==='high'?'● High confidence':c==='medium'?'● Medium confidence':'● Emerging signal'; }
 
-  let activeRegion = 'All';
+  var gSel, projFn, tooltipEl, mapWrapEl, sidePanelEl, panelContentEl;
 
   function initMap() {
-    const svg = d3.select('#world-svg').attr('viewBox', '0 0 960 500');
-    const proj = d3.geoNaturalEarth1().scale(153).translate([480, 260]);
-    const path = d3.geoPath(proj);
-    const g = svg.append('g');
-    const tooltip = document.getElementById('map-tooltip');
-    const mapWrap = document.getElementById('map-wrap');
-    const sidePanel = document.getElementById('side-panel');
-    const panelContent = document.getElementById('panel-content');
+    var svg = d3.select('#world-svg').attr('viewBox','0 0 960 500');
+    projFn = d3.geoNaturalEarth1().scale(153).translate([480,260]);
+    var path = d3.geoPath(projFn);
+    gSel = svg.append('g');
+    tooltipEl = document.getElementById('map-tooltip');
+    mapWrapEl = document.getElementById('map-wrap');
+    sidePanelEl = document.getElementById('side-panel');
+    panelContentEl = document.getElementById('panel-content');
 
-    // Zoom + pan
-    const zoom = d3.zoom().scaleExtent([1, 8]).on('zoom', (event) => {
-      g.attr('transform', event.transform);
-    });
+    var zoom = d3.zoom().scaleExtent([1,8]).on('zoom', function(e){ gSel.attr('transform', e.transform); });
     svg.call(zoom);
 
-    // Load topology
-    d3.json(WORLD_TOPO).then((world) => {
-      g.append('g')
-        .selectAll('path')
+    d3.json(WORLD_TOPO).then(function(world) {
+      gSel.append('g').selectAll('path')
         .data(topojson.feature(world, world.objects.countries).features)
-        .join('path')
-        .attr('d', path)
-        .attr('fill', '#1a2233')
-        .attr('stroke', '#0d1117')
-        .attr('stroke-width', 0.5);
-
-      g.append('path')
-        .datum(topojson.mesh(world, world.objects.countries, (a, b) => a !== b))
-        .attr('d', path)
-        .attr('fill', 'none')
-        .attr('stroke', 'rgba(255,255,255,0.05)')
-        .attr('stroke-width', 0.4);
-
-      renderMarkers(g, proj, tooltip, mapWrap, sidePanel, panelContent);
+        .join('path').attr('d', path).attr('fill','#1a2233').attr('stroke','#0d1117').attr('stroke-width',0.5);
+      gSel.append('path')
+        .datum(topojson.mesh(world, world.objects.countries, function(a,b){return a!==b;}))
+        .attr('d', path).attr('fill','none').attr('stroke','rgba(255,255,255,0.05)').attr('stroke-width',0.4);
+      renderMarkers();
     });
 
-    // Filter buttons
-    const regions = ['All', 'Africa', 'Americas', 'Asia', 'Europe', 'Middle East'];
-    const filterBar = document.getElementById('map-filter-bar');
-    regions.forEach((r) => {
-      const btn = document.createElement('button');
-      btn.className = 'filter-btn' + (r === 'All' ? ' active' : '');
-      btn.textContent = r;
-      btn.addEventListener('click', () => {
-        activeRegion = r;
-        document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+    var regions = ['All','Africa','Americas','Asia','Europe','Middle East'];
+    var filterBar = document.getElementById('map-filter-bar');
+    if (filterBar) {
+      regions.forEach(function(r) {
+        var btn = document.createElement('button');
+        btn.className = 'map-filter-btn' + (r==='All' ? ' active' : '');
+        btn.textContent = r;
+        btn.addEventListener('click', function() {
+          activeRegion = r;
+          document.querySelectorAll('.map-filter-btn').forEach(function(b){b.classList.remove('active');});
+          btn.classList.add('active');
+          renderMarkers();
+          if (sidePanelEl) sidePanelEl.style.display = 'none';
+          renderTracker();
+        });
+        filterBar.appendChild(btn);
+      });
+    }
+
+    svg.on('click', function(){ if(sidePanelEl) sidePanelEl.style.display='none'; });
+  }
+
+  function renderMarkers() {
+    if (!gSel) return;
+    gSel.selectAll('.conflict-marker').remove();
+    var visible = CONFLICTS.filter(function(c) {
+      var regOk = activeRegion==='All' || c.region===activeRegion;
+      var secOk = activeSector==='All' || (c.sectors && c.sectors.indexOf(activeSector)!==-1);
+      return regOk && secOk;
+    });
+    visible.forEach(function(c) {
+      var coords = projFn([c.lng, c.lat]);
+      if (!coords || !coords[0]) return;
+      var x = coords[0], y = coords[1];
+      var col = levelColor(c.level);
+      var mg = gSel.append('g').attr('class','conflict-marker').attr('transform','translate('+x+','+y+')').style('cursor','pointer');
+      var pulse = mg.append('circle').attr('r',6).attr('fill','none').attr('stroke',col).attr('stroke-width',1.5).attr('opacity',0.6);
+      function anim(){ pulse.attr('r',6).attr('opacity',0.6).transition().duration(1800).ease(d3.easeCubicOut).attr('r',16).attr('opacity',0).on('end',anim); }
+      anim();
+      mg.append('circle').attr('r',9).attr('fill',col).attr('opacity',0.12);
+      mg.append('circle').attr('r',5.5).attr('fill',col).attr('opacity',0.9);
+      mg.on('mouseenter', function(ev) {
+        if (!tooltipEl||!mapWrapEl) return;
+        tooltipEl.style.display='block';
+        tooltipEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#e8e8e8;margin-bottom:3px">'+c.name+'</div><div style="font-size:11px;color:#6b7280;margin-bottom:6px">'+(c.geo||c.region)+'</div><span style="font-size:9px;padding:2px 8px;border-radius:20px;background:'+col+'22;color:'+col+';border:1px solid '+col+'44;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">'+levelLabel(c.level)+'</span><div style="margin-top:7px;font-size:11px;color:#4a5568;font-weight:500">Click to open brief</div>';
+        var rect=mapWrapEl.getBoundingClientRect();
+        tooltipEl.style.left=(ev.clientX-rect.left+14)+'px';
+        tooltipEl.style.top=(ev.clientY-rect.top-10)+'px';
+      }).on('mouseleave', function(){if(tooltipEl) tooltipEl.style.display='none';})
+        .on('click', function(ev){ ev.stopPropagation(); if(tooltipEl) tooltipEl.style.display='none'; openPanel(c); });
+    });
+  }
+
+  function openPanel(c) {
+    if (!sidePanelEl||!panelContentEl) return;
+    var col = levelColor(c.level);
+    sidePanelEl.style.display='block';
+    var secs = (c.sectors||[]).map(function(s){return '<span style="font-size:9px;padding:2px 8px;border-radius:2px;background:rgba(255,255,255,0.06);color:#9aa5b4;font-weight:700">'+s+'</span>';}).join('');
+    var issueUrl = (typeof ISSUES!=='undefined'&&ISSUES[0])?ISSUES[0].url:'#';
+    panelContentEl.innerHTML='<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button onclick="document.getElementById(\'side-panel\').style.display=\'none\'" style="background:transparent;border:none;color:#4a5568;cursor:pointer;font-size:20px;line-height:1">×</button></div>'
+      +'<span style="font-size:9px;padding:3px 9px;border-radius:20px;background:'+col+'22;color:'+col+';border:1px solid '+col+'44;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">'+levelLabel(c.level)+'</span>'
+      +'<h3 style="font-size:14px;font-weight:700;color:#e8e8e8;margin:10px 0 4px;line-height:1.4">'+c.name+'</h3>'
+      +'<div style="font-size:10px;color:#4a5568;margin-bottom:12px;font-weight:600">'+(c.geo||c.region)+' · Day '+c.days+'</div>'
+      +(c.impact?'<div style="background:rgba(255,88,93,0.1);border-left:3px solid #FF585D;padding:10px 12px;margin-bottom:12px"><div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#FF585D;margin-bottom:4px">Business impact</div><p style="font-size:12px;color:#ccc;line-height:1.65">'+c.impact+'</p></div>':'')
+      +'<p style="font-size:12px;color:#9aa5b4;line-height:1.7;margin-bottom:10px">'+(c.situation||c.summary||'')+'</p>'
+      +(c.watch?'<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:10px;border:1px solid rgba(255,255,255,0.07);margin-bottom:12px"><div style="font-size:9px;letter-spacing:1px;color:#4a5568;text-transform:uppercase;margin-bottom:5px;font-weight:700">Watch for</div><p style="font-size:12px;color:#9aa5b4;line-height:1.6">'+c.watch+'</p></div>':'')
+      +(secs?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px">'+secs+'</div>':'')
+      +'<a href="'+issueUrl+'" style="display:block;text-align:center;font-size:12px;color:#FF585D;border:1px solid rgba(255,88,93,0.4);padding:8px;border-radius:6px;font-weight:700">Read full analysis →</a>';
+  }
+
+  function initSectorFilters() {
+    var row = document.getElementById('sector-filter-row');
+    if (!row) return;
+    row.querySelectorAll('.sector-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        activeSector = this.dataset.sector;
+        row.querySelectorAll('.sector-btn').forEach(function(b){b.classList.remove('active');});
         btn.classList.add('active');
-        renderMarkers(g, proj, tooltip, mapWrap, sidePanel, panelContent);
-        closeSidePanel(sidePanel);
-      });
-      filterBar.appendChild(btn);
-    });
-
-    // Click outside panel to close
-    svg.on('click', (event) => {
-      if (!event.target.closest('.conflict-marker-g')) closeSidePanel(sidePanel);
-    });
-  }
-
-  function renderMarkers(g, proj, tooltip, mapWrap, sidePanel, panelContent) {
-    g.selectAll('.conflict-marker-g').remove();
-
-    const visible = CONFLICTS.filter(
-      (c) => activeRegion === 'All' || c.region === activeRegion
-    );
-
-    visible.forEach((c) => {
-      const [x, y] = proj([c.lng, c.lat]);
-      if (!x || !y) return;
-      const col = levelColor(c.level);
-
-      const mg = g
-        .append('g')
-        .attr('class', 'conflict-marker-g')
-        .attr('transform', `translate(${x},${y})`)
-        .style('cursor', 'pointer');
-
-      // Pulse ring
-      const pulse = mg.append('circle').attr('r', 6).attr('fill', 'none').attr('stroke', col).attr('stroke-width', 1.5).attr('opacity', 0.6);
-      function animatePulse() {
-        pulse.attr('r', 6).attr('opacity', 0.6)
-          .transition().duration(1800).ease(d3.easeCubicOut)
-          .attr('r', 16).attr('opacity', 0)
-          .on('end', animatePulse);
-      }
-      animatePulse();
-
-      // Outer glow
-      mg.append('circle').attr('r', 9).attr('fill', col).attr('opacity', 0.15);
-      // Core dot
-      mg.append('circle').attr('r', 5.5).attr('fill', col).attr('opacity', 0.92);
-
-      // Hover tooltip
-      mg.on('mouseenter', (event) => {
-        tooltip.style.display = 'block';
-        tooltip.innerHTML = `
-          <div style="font-size:12px;font-weight:500;color:#e8e8e8;margin-bottom:3px">${c.title}</div>
-          <div style="font-size:11px;color:#6b7280;margin-bottom:7px">${c.region}</div>
-          <span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${col}22;color:${col};border:1px solid ${col}44">${levelLabel(c.level)}</span>
-          <div style="margin-top:7px;font-size:11px;color:#4a5568">Click to open brief</div>
-        `;
-        const rect = mapWrap.getBoundingClientRect();
-        tooltip.style.left = (event.clientX - rect.left + 14) + 'px';
-        tooltip.style.top = (event.clientY - rect.top - 10) + 'px';
-      });
-
-      mg.on('mouseleave', () => { tooltip.style.display = 'none'; });
-
-      mg.on('click', (event) => {
-        event.stopPropagation();
-        tooltip.style.display = 'none';
-        openSidePanel(c, sidePanel, panelContent);
+        renderTracker();
+        renderMarkers();
       });
     });
   }
 
-  function openSidePanel(c, panel, content) {
-    const col = levelColor(c.level);
-    panel.style.display = 'block';
-    panel.classList.add('open');
-    content.innerHTML = `
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-        <button onclick="document.getElementById('side-panel').style.display='none'"
-          style="background:transparent;border:none;color:#4a5568;cursor:pointer;font-size:20px;line-height:1">×</button>
-      </div>
-      <span style="font-size:10px;padding:3px 10px;border-radius:20px;
-        background:${col}22;color:${col};border:1px solid ${col}44;
-        letter-spacing:0.5px;font-family:monospace">${levelLabel(c.level).toUpperCase()}</span>
-      <h3 style="font-size:15px;font-weight:500;color:#e8e8e8;margin:10px 0 4px;line-height:1.4;font-family:'Playfair Display',serif">${c.title}</h3>
-      <div style="font-size:11px;color:#4a5568;margin-bottom:14px">${c.region} · Day ${c.days}</div>
-      <p style="font-size:13px;color:#9aa5b4;line-height:1.7;margin-bottom:14px">${c.summary}</p>
-      <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:12px;border:1px solid rgba(255,255,255,0.07)">
-        <div style="font-size:10px;letter-spacing:1px;color:#4a5568;text-transform:uppercase;margin-bottom:6px;font-family:monospace">Watch for</div>
-        <p style="font-size:12px;color:#9aa5b4;line-height:1.6">${c.watch}</p>
-      </div>
-      <div style="margin-top:14px">
-        <a href="${ISSUES[0] ? ISSUES[0].url : '#'}" style="display:block;text-align:center;font-size:12px;
-          color:#c0392b;border:1px solid rgba(192,57,43,0.4);padding:9px;border-radius:8px">
-          Read full analysis →
-        </a>
-      </div>
-    `;
-  }
-
-  function closeSidePanel(panel) {
-    panel.style.display = 'none';
-  }
-
-  // Conflict tracker rows
   function renderTracker() {
-    const list = document.getElementById('conflict-list');
-    if (!list) return;
-    list.innerHTML = '';
-    CONFLICTS.forEach((c) => {
-      const col = levelColor(c.level);
-      const row = document.createElement('div');
-      row.className = 'conflict-row';
-      row.innerHTML = `
-        <div class="conf-dot" style="background:${col}"></div>
-        <div style="flex:1;min-width:0">
-          <div class="conf-title">${c.title}</div>
-          <div class="conf-meta">${c.region} · Day ${c.days} · Updated ${c.updated}</div>
-        </div>
-        <span class="conf-badge ${levelBadgeClass(c.level)}">${levelLabel(c.level)}</span>
-      `;
-      list.appendChild(row);
+    var list = document.getElementById('conflict-list');
+    if (!list || typeof CONFLICTS==='undefined') return;
+    var filtered = CONFLICTS.filter(function(c) {
+      var regOk = activeRegion==='All'||c.region===activeRegion;
+      var secOk = activeSector==='All'||(c.sectors&&c.sectors.indexOf(activeSector)!==-1);
+      return regOk&&secOk;
+    });
+    if (!filtered.length) { list.innerHTML='<div class="tr-empty">No conflicts match the selected filters.</div>'; return; }
+    list.innerHTML='';
+    filtered.forEach(function(c) {
+      var col=levelColor(c.level);
+      var div=document.createElement('div');
+      div.className='tr-item';
+      var secs=(c.sectors||[]).map(function(s){return '<span class="sector-tag">'+s+'</span>';}).join('');
+      div.innerHTML='<div class="tr-top"><div><div class="tr-name"><span class="tr-dot" style="background:'+col+'"></span>'+c.name+'</div><div class="tr-geo">'+(c.geo||c.region)+' · Day '+c.days+' · Updated '+(c.updated||'recently')+'</div></div><div class="tr-right"><span class="exp-pill '+badgeClass(c.level)+'">'+levelLabel(c.level)+'</span><div class="tr-sectors">'+secs+'</div></div></div>'
+        +(c.impact?'<div class="biz-impact"><div class="biz-lbl">Business impact</div><div class="biz-text">'+c.impact+'</div></div>':'')
+        +'<div class="sit-text">'+(c.situation||c.summary||'')+'</div>'
+        +(c.watch?'<div class="watch-row"><strong>Watch:</strong> '+c.watch+'</div>':'')
+        +(c.confidence?'<span class="conf-badge '+confClass(c.confidence)+'">'+confLabel(c.confidence)+'</span>':'');
+      list.appendChild(div);
     });
   }
 
-  // Risk index bars
   function renderRiskIndex() {
-    const container = document.getElementById('risk-index-rows');
-    if (!container) return;
-    container.innerHTML = '';
-    RISK_INDEX.forEach((r) => {
-      const col = r.score >= 70 ? '#e74c3c' : r.score >= 50 ? '#f39c12' : '#f1c40f';
-      const textCol = r.score >= 70 ? '#7f1d1d' : r.score >= 50 ? '#78350f' : '#713f12';
-      const row = document.createElement('div');
-      row.className = 'risk-row';
-      row.innerHTML = `
-        <span class="ri-label">${r.region}</span>
-        <div class="ri-bar-wrap"><div class="ri-bar" style="width:${r.score}%;background:${col}"></div></div>
-        <span class="ri-val" style="color:${textCol}">${r.score}</span>
-      `;
+    var container=document.getElementById('risk-index-rows');
+    if(!container||typeof RISK_INDEX==='undefined') return;
+    container.innerHTML='';
+    RISK_INDEX.forEach(function(r) {
+      var col=r.score>=70?'#FF585D':r.score>=50?'#f39c12':'#f1c40f';
+      var tc=r.score>=70?'#991b1b':r.score>=50?'#92400e':'#713f12';
+      var row=document.createElement('div');
+      row.className='ri-row';
+      row.innerHTML='<span class="ri-lbl">'+r.region+'</span><div class="ri-bar-w"><div class="ri-bar" style="width:'+r.score+'%;background:'+col+'"></div></div><span class="ri-val" style="color:'+tc+'">'+r.score+'</span>';
       container.appendChild(row);
     });
   }
 
-  // Archive grid
   function renderArchive() {
-    const grid = document.getElementById('archive-grid');
-    if (!grid) return;
-    grid.innerHTML = '';
-    const slots = 3;
-    ISSUES.forEach((issue) => {
-      const card = document.createElement('div');
-      card.className = 'archive-card';
-      card.onclick = () => { window.location.href = issue.url; };
-      card.innerHTML = `
-        <div class="arc-num">Issue ${issue.number}</div>
-        <div class="arc-title">${issue.title}</div>
-        <div class="arc-date">${issue.date}</div>
-        <div class="arc-tags">${issue.tags.map((t) => `<span class="arc-tag">${t}</span>`).join('')}</div>
-      `;
+    var grid=document.getElementById('archive-grid');
+    if(!grid||typeof ISSUES==='undefined') return;
+    grid.innerHTML='';
+    ISSUES.forEach(function(issue) {
+      var card=document.createElement('div');
+      card.className='arc-card';
+      card.onclick=function(){window.location.href=issue.url;};
+      card.innerHTML='<div class="arc-num">Issue '+issue.number+'</div><div class="arc-title">'+issue.title+'</div><div class="arc-date">'+issue.date+'</div><div class="arc-tags">'+issue.tags.map(function(t){return '<span class="arc-tag">'+t+'</span>';}).join('')+'</div>';
       grid.appendChild(card);
     });
-    // Fill empty slots
-    for (let i = ISSUES.length; i < slots; i++) {
-      const card = document.createElement('div');
-      card.className = 'archive-card arc-card-placeholder';
-      const weekNum = i + 1;
-      card.innerHTML = `<div class="arc-num">Issue ${String(weekNum).padStart(2,'0')}</div><div class="arc-title">Coming soon</div>`;
+    var slots=3;
+    for(var i=ISSUES.length;i<slots;i++){
+      var card=document.createElement('div');
+      card.className='arc-card arc-ph';
+      card.innerHTML='<div class="arc-num">Issue '+String(i+1).padStart(2,'0')+'</div><div class="arc-title">Coming soon</div>';
       grid.appendChild(card);
     }
   }
 
-  // Stat counter
   function renderStats() {
-    const activeCount = CONFLICTS.filter((c) => c.level === 'active').length;
-    const escalatingCount = CONFLICTS.filter((c) => c.level === 'escalating').length;
-    const highIntensity = activeCount + escalatingCount;
-    document.getElementById('stat-active') && (document.getElementById('stat-active').textContent = CONFLICTS.length);
-    document.getElementById('stat-high') && (document.getElementById('stat-high').textContent = highIntensity);
-    document.getElementById('stat-issues') && (document.getElementById('stat-issues').textContent = String(ISSUES.length).padStart(2,'0'));
+    var e=function(id){return document.getElementById(id);};
+    if(e('stat-active')) e('stat-active').textContent=CONFLICTS.length;
+    if(e('stat-high'))   e('stat-high').textContent=CONFLICTS.filter(function(c){return c.level==='active'||c.level==='escalating';}).length;
+    if(e('stat-issues')) e('stat-issues').textContent=String(ISSUES.length).padStart(2,'0');
   }
 
-  // Init everything once DOM is ready
-  document.addEventListener('DOMContentLoaded', () => {
+  window.handleBriefing = function() {
+    var email=document.getElementById('b-email')&&document.getElementById('b-email').value;
+    var sector=document.getElementById('b-sector')&&document.getElementById('b-sector').value;
+    if(!email||!email.includes('@')||!sector){alert('Please enter your work email and select a sector.');return;}
+    var ok=document.getElementById('briefing-ok');
+    if(ok){ok.style.display='block';setTimeout(function(){ok.style.display='none';},5000);}
+    if(document.getElementById('b-email')) document.getElementById('b-email').value='';
+    if(document.getElementById('b-sector')) document.getElementById('b-sector').selectedIndex=0;
+    if(document.getElementById('b-region')) document.getElementById('b-region').value='';
+  };
+
+  window.shareLinkedIn = function() {
+    var url=encodeURIComponent(window.location.href);
+    var title=encodeURIComponent('The Geopolitical Brief by Signal AI');
+    var summary=encodeURIComponent('Weekly geopolitical risk intelligence with business impact analysis — for executives, risk officers and investors.');
+    window.open('https://www.linkedin.com/sharing/share-offsite/?url='+url+'&title='+title+'&summary='+summary,'_blank','width=600,height=500');
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
     initMap();
+    initSectorFilters();
     renderTracker();
     renderRiskIndex();
     renderArchive();

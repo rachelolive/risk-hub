@@ -1,47 +1,30 @@
-# The Geopolitical Brief — Risk Hub
+# The Geopolitical Brief — v3 (Business Edition)
 **by Signal AI**
 
-A weekly geopolitical risk intelligence hub with an interactive conflict map, live tracker, and newsletter archive.
+## What changed in v3
+- Hero reframed: "Geopolitical risk, translated into business exposure"
+- Book a demo CTA prominent in nav, hero and sidebar
+- Sector filters on the conflict tracker (Energy, Supply chain, Financial markets, Commodities, Regulatory)
+- Every conflict item now opens with Business Impact before the situation briefing
+- Exposure ratings replace severity labels (High / Elevated / Monitor)
+- Confidence ratings on every item (High / Medium / Emerging)
+- Briefing request form replaces subscribe box (lead gen for Signal AI)
+- Tailored exposure card in hero showing this week's top risks at a glance
 
-## Structure
-
-```
-geopolitical-brief/
-├── index.html          # Main risk hub page
-├── issue.html          # Individual issue template
-├── css/
-│   └── style.css       # Global styles
-├── js/
-│   ├── map.js          # Interactive world map (D3 + TopoJSON)
-│   └── main.js         # Conflict data + UI logic
-├── data/
-│   └── conflicts.js    # Conflict data (update weekly)
-└── README.md
-```
+## Files
+- index.html — main risk hub
+- issue-01.html — first issue template
+- css/style.css — Signal AI brand styles
+- js/map.js — interactive map + sector/region filtering + tracker rendering
+- data/conflicts.js — update this weekly
 
 ## Deploying to GitHub Pages
+1. Push all files to your GitHub repo (main branch)
+2. Settings → Pages → Source: main branch / root
+3. Live at https://yourusername.github.io/geopolitical-brief/
 
-1. Create a new GitHub repository (e.g. `geopolitical-brief`)
-2. Push all files to the `main` branch
-3. Go to **Settings → Pages**
-4. Under **Source**, select `Deploy from a branch` → `main` → `/ (root)`
-5. Click **Save** — your site will be live at `https://yourusername.github.io/geopolitical-brief/`
-
-## Updating weekly
-
-1. Edit `data/conflicts.js` — update conflict entries, risk levels, summaries
-2. Duplicate `issue.html` → rename to e.g. `issue-02.html` and fill in content
-3. Update the archive grid in `index.html` with the new issue card
+## Weekly update workflow
+1. Edit data/conflicts.js — update conflict entries, impact, watch items
+2. Duplicate issue-01.html for each new issue
+3. Add new issue to ISSUES array in conflicts.js
 4. Push to GitHub — Pages redeploys automatically
-
-## Custom domain (optional)
-
-1. Add a `CNAME` file to the repo root containing your domain, e.g. `brief.signal.ai`
-2. Configure your DNS with a CNAME record pointing to `yourusername.github.io`
-
-## Dependencies (all CDN, no install needed)
-
-- [D3.js v7](https://d3js.org/) — map rendering
-- [TopoJSON](https://github.com/topojson/topojson) — world topology
-- [world-atlas](https://github.com/topojson/world-atlas) — country shapes
-- [Google Fonts](https://fonts.google.com/) — typography
